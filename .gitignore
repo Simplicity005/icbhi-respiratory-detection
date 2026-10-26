@@ -1,0 +1,20 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Audio binaries (keep raw audio external or in data/raw without committing large binaries)
+*.wav
+*.mp3
+*.zip
+*.tar.gz
+
+# System files
+.DS_Store
+Thumbs.db
