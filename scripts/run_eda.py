@@ -22,7 +22,12 @@ plt.rcParams['figure.dpi'] = 300
 
 # Base paths
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-RAW_DATA_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, "..", "ICBHI_final_database", "ICBHI_final_database"))
+candidate_dirs = [
+    os.path.join(PROJECT_ROOT, "ICBHI_final_database"),
+    os.path.join(PROJECT_ROOT, "..", "ICBHI_final_database", "ICBHI_final_database"),
+    os.path.join(PROJECT_ROOT, "..", "ICBHI_final_database"),
+]
+RAW_DATA_DIR = next((os.path.abspath(d) for d in candidate_dirs if os.path.isdir(d) and len(glob.glob(os.path.join(d, "*.wav"))) > 0), os.path.abspath(candidate_dirs[0]))
 METADATA_DIR = os.path.join(PROJECT_ROOT, "data", "metadata")
 PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 FIGURES_DIR = os.path.join(PROJECT_ROOT, "reports", "figures")

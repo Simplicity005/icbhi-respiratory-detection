@@ -9,6 +9,9 @@ venv/
 env/
 .venv/
 
+# Raw dataset folder
+ICBHI_final_database/
+
 # Audio binaries (keep raw audio external or in data/raw without committing large binaries)
 *.wav
 *.mp3
