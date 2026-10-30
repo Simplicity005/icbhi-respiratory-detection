@@ -15,6 +15,7 @@ An end-to-end classical machine learning pipeline for automated respiratory dise
 - [Dataset Summary](#dataset-summary)
 - [Key Exploratory Data Analysis (EDA) Findings](#key-exploratory-data-analysis-eda-findings)
 - [Preprocessing & Segmentation Pipeline](#preprocessing--segmentation-pipeline)
+- [Acoustic Feature Engineering (Phase 3)](#acoustic-feature-engineering-phase-3)
 - [Visualizations](#visualizations)
 - [Machine Learning Architecture](#machine-learning-architecture)
 - [Repository Structure](#repository-structure)
@@ -38,20 +39,20 @@ This repository implements a **classical machine learning workflow** utilizing h
 
 ## Project Status & Roadmap
 
-> **Current Milestone**: **Phase 2 (Preprocessing & Segmentation) Complete** &mdash; Ready for **Phase 3 (Acoustic Feature Engineering)**.  
-> **Overall Progress**: `[████████░░░░░░░░░░] 40% (2 / 5 Core Phases Completed)`
+> **Current Milestone**: **Phase 3 (Acoustic Feature Engineering) Complete** &mdash; Ready for **Phase 4 (Classical Machine Learning & Benchmarking)**.  
+> **Overall Progress**: `[████████████░░░░░░░░] 60% (3 / 5 Core Phases Completed)`
 
 ```mermaid
 flowchart LR
     P1["Phase 1: EDA & Exploration\n(DONE)"] --> P2["Phase 2: DSP & Preprocessing\n(DONE)"]
-    P2 --> P3["Phase 3: Feature Engineering\n(NEXT UP)"]
-    P3 --> P4["Phase 4: ML Benchmarking\n(PLANNED)"]
+    P2 --> P3["Phase 3: Feature Engineering\n(DONE)"]
+    P3 --> P4["Phase 4: ML Benchmarking\n(NEXT UP)"]
     P4 --> P5["Phase 5: Evaluation & Metrics\n(PLANNED)"]
     
     style P1 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
     style P2 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
-    style P3 fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#856404
-    style P4 fill:#e2e3e5,stroke:#6c757d,stroke-width:1px,color:#383d41
+    style P3 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
+    style P4 fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#856404
     style P5 fill:#e2e3e5,stroke:#6c757d,stroke-width:1px,color:#383d41
 ```
 
@@ -74,15 +75,23 @@ flowchart LR
   - [x] Generate signal processing visualization (`fig7_preprocessing_and_segmentation.png`).
   - [x] Pipeline automation via [`scripts/preprocess_and_segment.py`](scripts/preprocess_and_segment.py) and [`notebooks/02_Preprocessing_and_Segmentation.ipynb`](notebooks/02_Preprocessing_and_Segmentation.ipynb).
 
-- [ ] **Phase 3: Acoustic Feature Engineering** *(Next Up)*
-  - [ ] Extract time-frequency representations: Mel-Frequency Cepstral Coefficients (MFCCs: 13–20 coeffs + $\Delta$ + $\Delta\Delta$).
-  - [ ] Extract spectral descriptors: Spectral Centroid, Spread, Rolloff (85%), Spectral Contrast, and Spectral Flatness.
-  - [ ] Extract temporal features: Zero-Crossing Rate (ZCR) and Root Mean Square (RMS) energy.
-  - [ ] Calculate statistical aggregation across time frames (mean, standard deviation, skewness, kurtosis).
-  - [ ] Generate structured train/test feature matrices (`X_train`, `X_test`, `y_train`, `y_test`) respecting the official benchmark split.
-  - [ ] Automate feature extraction via standalone script (`scripts/extract_features.py`) and notebook (`notebooks/03_Feature_Engineering.ipynb`).
+- [x] **Phase 3: Acoustic Feature Engineering** *(Completed)*
+  - [x] Extract 307 handcrafted acoustic biomarker features per respiratory cycle:
+    - **MFCCs** (20 coefficients + $\Delta$ + $\Delta\Delta$ $\times$ 4 summary statistics = 240 features).
+    - **Spectral Descriptors** (Centroid, Bandwidth, Rolloff 85% & 95%, Flatness, 7-band Contrast = 38 features).
+    - **Temporal Dynamics** (Zero-Crossing Rate, RMS Energy, Cycle Duration = 9 features).
+    - **Tonal / Wheeze Biomarkers** (Chroma STFT across 12 pitch classes = 24 features).
+  - [x] Export structured official benchmark matrices:
+    - Master table: `features_all.csv` (6,898 cycles $\times$ 327 columns).
+    - Benchmark split: `X_train.csv` (4,142 $\times$ 307) and `X_test.csv` (2,756 $\times$ 307).
+    - Target labels: `y_train.csv` and `y_test.csv` (4-class `class_id` + binary `is_adventitious`).
+    - Subgroup metadata: `metadata_train.csv` and `metadata_test.csv`.
+    - Catalogue: `feature_names.json` (complete structured feature dictionary).
+  - [x] Publication-ready verification figures (`fig8_acoustic_features_distribution.png`, `fig9_feature_correlation_matrix.png`, `fig10_pca_tsne_feature_space.png`).
+  - [x] Multi-core parallel feature extraction script [`scripts/extract_features.py`](scripts/extract_features.py) (242 seconds execution across 920 recordings).
+  - [x] Interactive walkthrough notebook [`notebooks/03_Feature_Engineering.ipynb`](notebooks/03_Feature_Engineering.ipynb).
 
-- [ ] **Phase 4: Classical Machine Learning & Model Training** *(Planned)*
+- [ ] **Phase 4: Classical Machine Learning & Model Training** *(Next Up)*
   - [ ] Benchmark baseline classifiers:
     - **Random Forest** (primary model with `class_weight="balanced"`).
     - **Support Vector Machine (SVM)** with RBF kernel and standard feature scaling.
@@ -170,6 +179,32 @@ Raw stethoscope audio recordings present significant challenges: heterogeneous s
 
 ---
 
+## Acoustic Feature Engineering (Phase 3)
+
+In Phase 3, each of the **6,898 segmented respiratory cycles** is transformed into a **307-dimensional handcrafted acoustic feature vector** designed to capture clinical auscultation biomarkers:
+
+### 1. Acoustic Biomarker Taxonomy (307 Features)
+| Domain | Biomarkers Extracted | Statistics / Bands | Dims ($D$) | Clinical Diagnostic Relevance |
+| :--- | :--- | :--- | :---: | :--- |
+| **MFCCs** | 20 Mel-Frequency Cepstral Coefficients | Mean, Std, Skew, Kurtosis | 80 | Acoustic vocal tract envelope & airway geometry |
+| **Delta MFCCs ($\Delta$)** | 1st temporal velocity derivative | Mean, Std, Skew, Kurtosis | 80 | Rate of spectral change, onset of explosive crackles |
+| **Delta-Delta ($\Delta\Delta$)** | 2nd temporal acceleration derivative | Mean, Std, Skew, Kurtosis | 80 | Non-stationary acoustic acceleration |
+| **Spectral Descriptors** | Centroid, Bandwidth, Rolloff (85% & 95%), Flatness | Mean, Std, Skew, Kurtosis | 24 | High-frequency emphasis; tonality vs. noise discrimination |
+| **Spectral Contrast** | Peak-to-valley energy difference across 7 octave sub-bands | Mean, Std per band | 14 | Harmonic prominence vs. background rumble |
+| **Temporal Dynamics** | Zero-Crossing Rate (ZCR) & RMS Energy | Mean, Std, Skew, Kurtosis | 8 | Discontinuous clicks/pops and respiratory cycle energy |
+| **Tonal / Wheeze Descriptors** | Chroma STFT across 12 pitch classes | Mean, Std per semitone | 24 | Pitch/tonal harmonic resonances characteristic of wheezing |
+| **Cycle Duration** | Duration of respiratory cycle in seconds | Direct duration | 1 | Tachypnea and respiratory rate variation |
+| **Total Features** | | | **307** | **Comprehensive Auscultation Feature Matrix** |
+
+### 2. Official Benchmark Matrix Breakdown
+The extracted feature matrices are saved in `data/processed/` conforming to the official ICBHI challenge benchmark split:
+* **`X_train.csv` / `y_train.csv`**: 4,142 cycles $\times$ 307 features across 79 subjects.
+* **`X_test.csv` / `y_test.csv`**: 2,756 cycles $\times$ 307 features across 49 subjects.
+* **`features_all.csv`**: Master matrix of all 6,898 cycles $\times$ 327 columns (20 metadata + 307 features).
+* **`feature_names.json`**: Structured catalogue of all 307 feature identifiers categorized by domain.
+
+---
+
 ## Visualizations
 
 All high-resolution figures are automatically generated by the pipelines and saved in `reports/figures/`:
@@ -190,6 +225,14 @@ All high-resolution figures are automatically generated by the pipelines and sav
 | :---: |
 | ![Preprocessing & Segmentation](reports/figures/fig7_preprocessing_and_segmentation.png) |
 
+| Acoustic Biomarker Distributions | Feature Correlation Matrix |
+| :---: | :---: |
+| ![Biomarkers](reports/figures/fig8_acoustic_features_distribution.png) | ![Correlation](reports/figures/fig9_feature_correlation_matrix.png) |
+
+| Unsupervised Manifold Projections (PCA & t-SNE) |
+| :---: |
+| ![Manifolds](reports/figures/fig10_pca_tsne_feature_space.png) |
+
 ---
 
 ## Machine Learning Architecture
@@ -198,24 +241,28 @@ All high-resolution figures are automatically generated by the pipelines and sav
 Raw Audio (.wav)
       │
       ▼
-[Preprocessing] ──► Butterworth Bandpass (50–2000 Hz) + Resampling (16 kHz / 4 kHz)
+[Preprocessing] ──► Butterworth Bandpass (50–2000 Hz) + Resampling (16 kHz)
       │
       ▼
 [Segmentation]  ──► Cut into annotated respiratory cycles (start_time to end_time)
       │
       ▼
-[Feature Extraction]
-      ├── MFCCs (13–20 coefficients + Δ + ΔΔ)
-      ├── Spectral Centroid, Spread, Rolloff (85%), Contrast, Flatness
-      ├── Zero-Crossing Rate (ZCR) & RMS Energy
-      └── Summary Statistics (Mean, Std, Skewness, Kurtosis)
+[Feature Extraction (Phase 3)]
+      ├── 20 MFCCs + Δ + ΔΔ (Mean, Std, Skewness, Kurtosis: 240 features)
+      ├── Spectral Centroid, Bandwidth, Rolloff (85% & 95%), Flatness, Contrast (38 features)
+      ├── Zero-Crossing Rate (ZCR) & RMS Energy (8 features)
+      ├── Chroma STFT (12 semitones: 24 features)
+      └── Cycle Duration (1 feature) ──► 307 Total Features
+      │
+      ▼
+[Official Benchmark Split] ──► X_train (4,142 × 307) & X_test (2,756 × 307)
       │
       ▼
 [Class Balancing] ──► Cost-sensitive learning (`class_weight="balanced"`) or SMOTE
       │
       ▼
-[Model Training & Evaluation]
-      ├── Random Forest (Primary Model)
+[Model Training & Evaluation (Phase 4)]
+      ├── Random Forest (Primary Baseline)
       ├── Support Vector Machine (SVM - RBF kernel)
       └── Gradient Boosting (XGBoost / LightGBM)
 ```
@@ -232,27 +279,39 @@ icbhi-respiratory-detection/
 │   │   ├── ICBHI_Challenge_diagnosis.txt
 │   │   ├── ICBHI_challenge_train_test.txt
 │   │   └── filename_differences.txt
-│   └── processed/                      # Extracted summary CSV tables & segmented audio
-│       ├── patients_summary.csv
-│       ├── recordings_summary.csv
-│       ├── cycles_summary.csv
-│       ├── segmented_cycles_metadata.csv # Master metadata for all 6,898 cycles
-│       └── segmented_cycles/           # 6,898 clean 16 kHz cycle .wav files
+│   └── processed/                      # Extracted feature matrices & summary tables
+│       ├── features_all.csv            # Master matrix: 6,898 cycles × 327 columns
+│       ├── X_train.csv                 # Train feature matrix: 4,142 cycles × 307 features
+│       ├── y_train.csv                 # Train labels (class_id + binary is_adventitious)
+│       ├── metadata_train.csv          # Train cycle metadata (patient, device, location)
+│       ├── X_test.csv                  # Test feature matrix: 2,756 cycles × 307 features
+│       ├── y_test.csv                  # Test labels (class_id + binary is_adventitious)
+│       ├── metadata_test.csv           # Test cycle metadata (patient, device, location)
+│       ├── feature_names.json          # Structured dictionary of all 307 feature names
+│       ├── segmented_cycles_metadata.csv # Master cycle timing annotations
+│       ├── patients_summary.csv        # Demographic summary table
+│       ├── recordings_summary.csv      # Audio recording metadata table
+│       └── cycles_summary.csv          # Respiratory cycle metadata table
 ├── notebooks/
-│   ├── 01_ICBHI_Exploratory_Data_Analysis.ipynb     # Interactive EDA notebook
-│   └── 02_Preprocessing_and_Segmentation.ipynb    # Interactive DSP & segmentation notebook
+│   ├── 01_ICBHI_Exploratory_Data_Analysis.ipynb     # Interactive EDA walkthrough
+│   ├── 02_Preprocessing_and_Segmentation.ipynb    # Interactive DSP & filtering walkthrough
+│   └── 03_Feature_Engineering.ipynb               # Interactive acoustic biomarker walkthrough
 ├── reports/
-│   └── figures/                        # High-resolution (300 DPI) visualization plots
+│   └── figures/                        # High-resolution (300 DPI) publication plots
 │       ├── fig1_disease_and_demographics.png
 │       ├── fig2_recording_acquisition_breakdown.png
 │       ├── fig3_sampling_rate_heterogeneity.png
 │       ├── fig4_respiratory_cycles_adventitious_sounds.png
 │       ├── fig5_train_test_distribution.png
 │       ├── fig6_audio_spectrogram_examples.png
-│       └── fig7_preprocessing_and_segmentation.png
+│       ├── fig7_preprocessing_and_segmentation.png
+│       ├── fig8_acoustic_features_distribution.png
+│       ├── fig9_feature_correlation_matrix.png
+│       └── fig10_pca_tsne_feature_space.png
 ├── scripts/
 │   ├── run_eda.py                      # Standalone EDA pipeline runner
-│   └── preprocess_and_segment.py       # Butterworth DSP filtering & cycle segmentation
+│   ├── preprocess_and_segment.py       # Butterworth DSP filtering & cycle segmentation
+│   └── extract_features.py             # Multi-core 307-feature extraction pipeline
 ├── .gitignore
 └── README.md
 ```
@@ -281,11 +340,18 @@ To perform sampling rate standardization (16 kHz), 4th-order zero-phase Butterwo
 python scripts/preprocess_and_segment.py
 ```
 
-### 4. Open Interactive Notebooks
+### 4. Run Acoustic Feature Engineering Pipeline
+To extract all 307 handcrafted features in parallel across 8 CPU workers and export `X_train`, `X_test`, `y_train`, `y_test`:
+```bash
+python scripts/extract_features.py --workers 8
+```
+
+### 5. Open Interactive Notebooks
 Launch Jupyter or open directly in VS Code:
 ```bash
 jupyter notebook notebooks/01_ICBHI_Exploratory_Data_Analysis.ipynb
 jupyter notebook notebooks/02_Preprocessing_and_Segmentation.ipynb
+jupyter notebook notebooks/03_Feature_Engineering.ipynb
 ```
 
 ---
