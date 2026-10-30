@@ -11,6 +11,7 @@ An end-to-end classical machine learning pipeline for automated respiratory dise
 
 ## Table of Contents
 - [Overview](#overview)
+- [Project Status & Roadmap](#project-status--roadmap)
 - [Dataset Summary](#dataset-summary)
 - [Key Exploratory Data Analysis (EDA) Findings](#key-exploratory-data-analysis-eda-findings)
 - [Preprocessing & Segmentation Pipeline](#preprocessing--segmentation-pipeline)
@@ -32,6 +33,75 @@ This repository implements a **classical machine learning workflow** utilizing h
 2. **Feature Engineering**: Time-frequency representation using Mel-Frequency Cepstral Coefficients (MFCCs), spectral descriptors (Centroid, Rolloff, Contrast, Flatness), and temporal dynamics (ZCR, RMS energy).
 3. **Classification**: Benchmarking **Random Forest** (with cost-sensitive class balancing) against **Support Vector Machines (SVM)** and **Gradient Boosting (XGBoost)**.
 4. **Validation**: Patient-independent evaluation following the official ICBHI challenge benchmark to prevent data leakage.
+
+---
+
+## Project Status & Roadmap
+
+> **Current Milestone**: **Phase 2 (Preprocessing & Segmentation) Complete** &mdash; Ready for **Phase 3 (Acoustic Feature Engineering)**.  
+> **Overall Progress**: `[████████░░░░░░░░░░] 40% (2 / 5 Core Phases Completed)`
+
+```mermaid
+flowchart LR
+    P1["Phase 1: EDA & Exploration\n(DONE)"] --> P2["Phase 2: DSP & Preprocessing\n(DONE)"]
+    P2 --> P3["Phase 3: Feature Engineering\n(NEXT UP)"]
+    P3 --> P4["Phase 4: ML Benchmarking\n(PLANNED)"]
+    P4 --> P5["Phase 5: Evaluation & Metrics\n(PLANNED)"]
+    
+    style P1 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
+    style P2 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
+    style P3 fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#856404
+    style P4 fill:#e2e3e5,stroke:#6c757d,stroke-width:1px,color:#383d41
+    style P5 fill:#e2e3e5,stroke:#6c757d,stroke-width:1px,color:#383d41
+```
+
+### Detailed Roadmap & Deliverables
+
+- [x] **Phase 1: Exploratory Data Analysis & Metadata Structuring** *(Completed)*
+  - [x] Audit 126 subjects, 920 recordings, and 6,898 respiratory cycles.
+  - [x] Analyze disease distributions, recording hardware, and auscultation chest sites.
+  - [x] Verify official patient-independent train/test benchmark split (79 train / 49 test).
+  - [x] Extract summary CSVs (`patients_summary.csv`, `recordings_summary.csv`, `cycles_summary.csv`).
+  - [x] Produce publication-ready visualization figures (`fig1` through `fig6`).
+  - [x] Pipeline automation via [`scripts/run_eda.py`](scripts/run_eda.py) and [`notebooks/01_ICBHI_Exploratory_Data_Analysis.ipynb`](notebooks/01_ICBHI_Exploratory_Data_Analysis.ipynb).
+
+- [x] **Phase 2: Signal Preprocessing & Respiratory Cycle Segmentation** *(Completed)*
+  - [x] High-fidelity sinc resampling to standard 16 kHz sampling rate (`soxr`).
+  - [x] 4th-order zero-phase Butterworth bandpass filter (50–2,000 Hz) to eliminate cardiac murmur (<50 Hz) and high-frequency noise.
+  - [x] Zero-DC offset demeaning and peak amplitude normalization (0.95).
+  - [x] Slice continuous audio into 6,898 clean cycle `.wav` files stored in `data/processed/segmented_cycles/`.
+  - [x] Generate master metadata table `data/processed/segmented_cycles_metadata.csv` with cycle durations, class labels, and split indicators.
+  - [x] Generate signal processing visualization (`fig7_preprocessing_and_segmentation.png`).
+  - [x] Pipeline automation via [`scripts/preprocess_and_segment.py`](scripts/preprocess_and_segment.py) and [`notebooks/02_Preprocessing_and_Segmentation.ipynb`](notebooks/02_Preprocessing_and_Segmentation.ipynb).
+
+- [ ] **Phase 3: Acoustic Feature Engineering** *(Next Up)*
+  - [ ] Extract time-frequency representations: Mel-Frequency Cepstral Coefficients (MFCCs: 13–20 coeffs + $\Delta$ + $\Delta\Delta$).
+  - [ ] Extract spectral descriptors: Spectral Centroid, Spread, Rolloff (85%), Spectral Contrast, and Spectral Flatness.
+  - [ ] Extract temporal features: Zero-Crossing Rate (ZCR) and Root Mean Square (RMS) energy.
+  - [ ] Calculate statistical aggregation across time frames (mean, standard deviation, skewness, kurtosis).
+  - [ ] Generate structured train/test feature matrices (`X_train`, `X_test`, `y_train`, `y_test`) respecting the official benchmark split.
+  - [ ] Automate feature extraction via standalone script (`scripts/extract_features.py`) and notebook (`notebooks/03_Feature_Engineering.ipynb`).
+
+- [ ] **Phase 4: Classical Machine Learning & Model Training** *(Planned)*
+  - [ ] Benchmark baseline classifiers:
+    - **Random Forest** (primary model with `class_weight="balanced"`).
+    - **Support Vector Machine (SVM)** with RBF kernel and standard feature scaling.
+    - **Gradient Boosting** (XGBoost / LightGBM).
+  - [ ] Formulate target prediction tasks:
+    - **4-Class Classification**: Normal vs. Crackle vs. Wheeze vs. Both.
+    - **2-Class Classification**: Normal vs. Adventitious (abnormal).
+  - [ ] Address class imbalance using cost-sensitive learning and SMOTE / audio data augmentation.
+  - [ ] Hyperparameter tuning using patient-grouped cross-validation (`GroupKFold`) on the training cohort.
+
+- [ ] **Phase 5: Evaluation, Error Analysis & Interpretability** *(Planned)*
+  - [ ] Evaluate on unseen test cohort using official ICBHI metrics: Sensitivity ($S_e$), Specificity ($S_p$), and ICBHI Score ($\frac{S_e + S_p}{2}$).
+  - [ ] Compute multi-class confusion matrices, ROC-AUC, and per-class precision/recall curves.
+  - [ ] Feature importance ranking (MDI / permutation importance / SHAP) to validate acoustic biomarker clinical relevance.
+  - [ ] Hardware and anatomical site error breakdown to evaluate cross-device robustness.
+
+- [ ] **Phase 6: Extensions & Interactive Auscultation Demo** *(Future)*
+  - [ ] Deep learning comparison (e.g., 2D CNN / ResNet on log-Mel spectrograms).
+  - [ ] Lightweight web interface (Streamlit / Gradio) allowing users to upload stethoscope audio, visualize filtered waveforms and spectrograms, and obtain automated diagnostic predictions.
 
 ---
 
