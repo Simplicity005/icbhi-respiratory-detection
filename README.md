@@ -14,7 +14,7 @@ An end-to-end Machine Learning pipeline to automatically detect respiratory dise
 * **The Problem**: Doctors use stethoscopes to listen for lung diseases like COPD and Pneumonia. However, human interpretation is subjective and depends heavily on physician experience and ambient room noise.
 * **The Goal**: Build an automated machine learning system that listens to digital stethoscope audio, identifies individual breath cycles, and classifies whether the breathing sound is **Normal**, contains **Crackles**, contains **Wheezes**, or **Both**.
 * **The Dataset**: Official **ICBHI 2017 Challenge Database** (126 patients, 920 recordings, 6,898 annotated breath cycles).
-* **Current Status**: **60% Complete (Phase 3 Done)**. Audio is resampled, bandpass-filtered, sliced into 6,898 clean breath cycles, and converted into 307 numerical acoustic features ready for machine learning model training.
+* **Current Status**: **80% Complete (Phase 4 Done)**. All 6,898 breath cycles preprocessed and converted into 307 acoustic features. Four classical machine learning classifiers (Random Forest, LightGBM, SVM, Logistic Regression) trained with strict 5-fold patient-aware cross-validation and fully benchmarked on the official ICBHI test cohort (2,756 cycles across 49 patients).
 
 ---
 
@@ -24,14 +24,14 @@ An end-to-end Machine Learning pipeline to automatically detect respiratory dise
 flowchart LR
     P1["Phase 1: Data Exploration\n(DONE)"] --> P2["Phase 2: Audio Preprocessing\n(DONE)"]
     P2 --> P3["Phase 3: Feature Engineering\n(DONE)"]
-    P3 --> P4["Phase 4: ML Model Training\n(NEXT UP)"]
-    P4 --> P5["Phase 5: Evaluation & Metrics\n(PLANNED)"]
+    P3 --> P4["Phase 4: ML Model Benchmarking\n(DONE)"]
+    P4 --> P5["Phase 5: Deep Learning & CNNs\n(NEXT UP)"]
     
     style P1 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
     style P2 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
     style P3 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
-    style P4 fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#856404
-    style P5 fill:#e2e3e5,stroke:#6c757d,stroke-width:1px,color:#383d41
+    style P4 fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
+    style P5 fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#856404
 ```
 
 | Phase | Description | Status | Key Output |
@@ -39,8 +39,33 @@ flowchart LR
 | **Phase 1: Exploratory Data Analysis** | Analyze demographics, hardware, and sound distributions across 126 patients | `COMPLETED` | Summary tables (`.csv`) & Figures 1–6 |
 | **Phase 2: Signal Preprocessing** | Standardize sampling rate (16 kHz), filter heart sounds (50–2,000 Hz bandpass), segment into breath cycles | `COMPLETED` | 6,898 segmented cycles & Figure 7 |
 | **Phase 3: Feature Engineering** | Extract 307 acoustic features per cycle (MFCCs, pitch, spectral rolloff, loudness dynamics) | `COMPLETED` | `X_train.csv`, `X_test.csv` & Figures 8–10 |
-| **Phase 4: ML Model Training** | Train & benchmark Random Forest, SVM, and XGBoost with class-balancing | `NEXT UP` | Trained classification models |
-| **Phase 5: Clinical Evaluation** | Calculate official ICBHI Sensitivity, Specificity, and Score ($S_e + S_p)/2$ | `PLANNED` | Benchmark evaluation report |
+| **Phase 4: ML Model Benchmarking** | Train & benchmark Random Forest, LightGBM, SVM, and Logistic Regression with patient-aware CV | `COMPLETED` | `models/*.joblib`, Results CSV & Figures 11–13 |
+| **Phase 5: Deep Learning (Spectrogram CNNs)** | Train 2D CNNs / ResNet / AST models directly on Mel-Spectrograms | `NEXT UP` | Deep learning models & final report |
+
+---
+
+## 🏆 Model Benchmark Results (Phase 4)
+
+All models were evaluated on the **official ICBHI test cohort** (2,756 respiratory cycles across 49 unseen patients) following official challenge guidelines:
+* **Specificity ($S_p$)**: Accuracy on Normal breathing cycles ($Class = 0$).
+* **Sensitivity ($S_e$)**: Average recall on abnormal disease cycles ($Class \in \{1, 2, 3\}$).
+* **ICBHI Score**: Balanced clinical average: $\frac{S_p + S_e}{2}$.
+
+### 4-Class Task (Normal vs. Crackle vs. Wheeze vs. Both)
+| Model | ICBHI Score | Sensitivity ($S_e$) | Specificity ($S_p$) | Accuracy | Macro F1 | 5-Fold CV Score |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| 🥇 **LightGBM** | **42.85%** | 29.72% | **55.98%** | **47.71%** | **35.66%** | **51.41%** |
+| 🥈 **Random Forest** | 39.78% | 31.43% | 48.13% | 44.85% | 33.80% | 48.28% |
+| 🥉 **Support Vector Machine (RBF)** | 39.40% | 31.42% | 47.37% | 43.36% | 33.70% | 49.16% |
+| 4️⃣ **Logistic Regression** | 36.92% | **39.33%** | 34.52% | 38.86% | 33.23% | 44.00% |
+
+### 2-Class Binary Task (Normal vs. Adventitious / Abnormal)
+| Model | ICBHI Score | Sensitivity ($S_e$) | Specificity ($S_p$) | Accuracy | Macro F1 | 5-Fold CV Score |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| 🥇 **LightGBM** | **55.70%** | 59.22% | 52.18% | 55.19% | 55.09% | 63.54% |
+| 🥈 **Support Vector Machine (RBF)** | 55.52% | 54.80% | **56.24%** | **55.62%** | **55.28%** | **64.22%** |
+| 🥉 **Random Forest** | 55.00% | 58.45% | 51.55% | 54.50% | 54.40% | 62.71% |
+| 4️⃣ **Logistic Regression** | 54.67% | **64.83%** | 44.52% | 53.19% | 53.17% | 62.50% |
 
 ---
 
@@ -102,6 +127,16 @@ Following the official ICBHI challenge partition, the data is split into patient
 
 All publication-ready plots (300 DPI) are automatically generated in [`reports/figures/`](reports/figures/):
 
+### Phase 4: Model Benchmarking Figures
+| Figure 11: Benchmark Metric Comparison | Figure 12: Test Set Confusion Matrices |
+| :---: | :---: |
+| ![Figure 11](reports/figures/fig11_model_benchmark_comparison.png) | ![Figure 12](reports/figures/fig12_confusion_matrices.png) |
+
+| Figure 13: Top 20 Most Predictive Acoustic Biomarkers |
+| :---: |
+| ![Figure 13](reports/figures/fig13_feature_importances.png) |
+
+### Phases 1–3: Data & Signal Processing Figures
 | 1. Disease & Demographics | 2. Sound Class Distribution |
 | :---: | :---: |
 | ![Demographics](reports/figures/fig1_disease_and_demographics.png) | ![Cycles](reports/figures/fig4_respiratory_cycles_adventitious_sounds.png) |
@@ -127,7 +162,7 @@ Clone the repository and install the standard scientific Python packages:
 ```bash
 git clone https://github.com/Simplicity005/icbhi-respiratory-detection.git
 cd icbhi-respiratory-detection
-pip install numpy pandas scipy scikit-learn matplotlib seaborn librosa soundfile soxr
+pip install numpy pandas scipy scikit-learn lightgbm xgboost matplotlib seaborn librosa soundfile soxr
 ```
 
 ### 2. Run Data Exploration (Phase 1)
@@ -148,11 +183,18 @@ Extracts all 307 acoustic features using parallel processing across CPU cores:
 python scripts/extract_features.py --workers 8
 ```
 
-### 5. Open Interactive Notebooks
+### 5. Run Model Training & Benchmarking (Phase 4)
+Trains Random Forest, LightGBM, SVM, and Logistic Regression with 5-fold patient-aware cross-validation and evaluates on the official test cohort:
+```bash
+python scripts/train_models.py
+```
+
+### 6. Open Interactive Notebooks
 Explore the pipeline interactively in Jupyter or VS Code:
 * [`notebooks/01_ICBHI_Exploratory_Data_Analysis.ipynb`](notebooks/01_ICBHI_Exploratory_Data_Analysis.ipynb): Interactive demographic & sound exploration.
 * [`notebooks/02_Preprocessing_and_Segmentation.ipynb`](notebooks/02_Preprocessing_and_Segmentation.ipynb): Interactive Butterworth filtering and audio slicing.
-* [`notebooks/03_Feature_Engineering.ipynb`](notebooks/03_Feature_Engineering.ipynb): Interactive acoustic feature exploration, spectrograms, and PCA/t-SNE clusters.
+* [`notebooks/03_Feature_Engineering.ipynb`](notebooks/03_Feature_Engineering.ipynb): Real ICBHI audio exploration, spectrograms, and PCA/t-SNE clusters.
+* [`notebooks/04_Model_Training_and_Evaluation.ipynb`](notebooks/04_Model_Training_and_Evaluation.ipynb): Patient-aware cross-validation, classifier benchmarking, confusion matrices, and feature importance rankings.
 
 ---
 
@@ -170,16 +212,26 @@ icbhi-respiratory-detection/
 │       ├── features_all.csv            # Master dataset (6,898 cycles × 327 columns)
 │       ├── feature_names.json          # Dictionary of all 307 features
 │       └── segmented_cycles_metadata.csv # Timing boundaries for each cycle
+├── models/                             # Trained model weights & scalers
+│   ├── lightgbm_4class.joblib          # Best 4-Class model (42.85% ICBHI Score)
+│   ├── lightgbm_binary.joblib          # Best Binary model (55.70% ICBHI Score)
+│   ├── random_forest_4class.joblib     # Random Forest 4-Class model
+│   ├── random_forest_binary.joblib     # Random Forest Binary model
+│   ├── svm_binary.joblib               # Support Vector Machine Binary model
+│   └── scaler.joblib                   # Fitted StandardScaler
 ├── notebooks/
 │   ├── 01_ICBHI_Exploratory_Data_Analysis.ipynb
 │   ├── 02_Preprocessing_and_Segmentation.ipynb
-│   └── 03_Feature_Engineering.ipynb
+│   ├── 03_Feature_Engineering.ipynb
+│   └── 04_Model_Training_and_Evaluation.ipynb
 ├── reports/
-│   └── figures/                        # High-resolution (300 DPI) publication figures
+│   ├── figures/                        # High-resolution (300 DPI) publication figures (Fig 1–13)
+│   └── model_benchmark_results.csv     # Complete benchmark metrics across all models & tasks
 ├── scripts/
 │   ├── run_eda.py                      # Phase 1 runner
 │   ├── preprocess_and_segment.py       # Phase 2 runner
-│   └── extract_features.py             # Phase 3 runner
+│   ├── extract_features.py             # Phase 3 runner
+│   └── train_models.py                 # Phase 4 runner
 ├── .gitignore
 └── README.md
 ```
